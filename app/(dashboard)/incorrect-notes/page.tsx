@@ -39,7 +39,9 @@ export default function IncorrectNotesPage() {
               <div className="text-2xl font-bold">{item.rate}</div>
               <p className="text-xs text-muted-foreground">정답률 (오답 {item.count}개)</p>
               <div className="mt-4">
-                <Button className="w-full" variant="outline" size="sm">복습하기</Button>
+                <Button className="w-full" variant="outline" size="sm" asChild>
+                  <Link href="/quiz/quiz_demo_123?mode=review">복습하기</Link>
+                </Button>
               </div>
             </CardContent>
           </Card>

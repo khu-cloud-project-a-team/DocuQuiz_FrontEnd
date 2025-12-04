@@ -151,7 +151,9 @@ export default function Dashboard() {
                     <p className="text-sm font-medium">{item.title}</p>
                     <p className="text-xs text-muted-foreground">정답률 {item.rate} 미만</p>
                   </div>
-                  <Button variant="ghost" size="sm">복습</Button>
+                  <Button variant="ghost" size="sm" asChild>
+                    <Link href="/quiz/quiz_demo_123?mode=review">복습</Link>
+                  </Button>
                 </div>
               ))}
             </div>
