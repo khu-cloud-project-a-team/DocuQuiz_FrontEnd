@@ -4,7 +4,8 @@ import { useState, useCallback } from "react";
 import { useDropzone } from "react-dropzone";
 import { UploadCloud, FileText, X, Loader2, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
+import { requestPresignedUpload, uploadFileToS3, confirmUploadMetadata } from "@/lib/upload";
 
 export default function UploadPage() {
   const [files, setFiles] = useState<File[]>([]);
@@ -24,15 +25,34 @@ export default function UploadPage() {
 
   const handleUpload = async () => {
     if (files.length === 0) return;
+
+    const file = files[0];
     setIsUploading(true);
 
-    // Mocking API call time
-    setTimeout(() => {
+    try {
+      const presigned = await requestPresignedUpload({
+        fileName: file.name,
+        fileType: file.type || "application/pdf",
+        fileSize: file.size,
+      });
+
+      await uploadFileToS3(presigned, file);
+
+      const confirmed = await confirmUploadMetadata({
+        fileName: file.name,
+        s3Key: presigned.key,
+        mimeType: file.type || "application/pdf",
+        size: file.size,
+      });
+
+      window.location.href = `/generate?fileId=${confirmed.id}`;
+    } catch (error) {
+      console.error("Upload failed", error);
+      const message = error instanceof Error ? error.message : "파일 업로드에 실패했습니다.";
+      alert(message);
+    } finally {
       setIsUploading(false);
-      // 실제 구현: API 응답에서 fileId 받아서 이동
-      // const fileId = "123"; 
-      window.location.href = `/generate?fileId=demo_file_123`;
-    }, 1500);
+    }
   };
 
   return (
