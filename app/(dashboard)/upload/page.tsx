@@ -1,17 +1,18 @@
 "use client";
 
 import { useState, useCallback } from "react";
+import { useRouter } from "next/navigation";
 import { useDropzone, FileRejection } from "react-dropzone";
 import { UploadCloud, FileText, X, Loader2, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { requestPresignedUpload, uploadFileToS3, confirmUploadMetadata } from "@/lib/upload";
+import { requestPresignedUpload, uploadFileToS3 } from "@/lib/upload";
 
 export default function UploadPage() {
   const [files, setFiles] = useState<File[]>([]);
   const [isUploading, setIsUploading] = useState(false);
+  const router = useRouter();
 
-  // 드롭존 설정
   const onDrop = useCallback((acceptedFiles: File[], fileRejections: FileRejection[]) => {
     const pdfFiles = acceptedFiles.filter(f => f.type === "application/pdf");
     if (pdfFiles.length > 0) {
@@ -23,7 +24,7 @@ export default function UploadPage() {
       if (rejection.errors[0].code === "file-too-large") {
         alert("파일 크기는 10MB를 초과할 수 없습니다.");
       } else {
-        alert("파일 업로드 중 오류가 발생했습니다.");
+        alert("PDF 파일만 업로드할 수 있습니다.");
       }
     }
   }, []);
@@ -31,7 +32,7 @@ export default function UploadPage() {
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
     accept: { "application/pdf": [".pdf"] },
-    maxFiles: 1, // 데모용 1개 제한
+    maxFiles: 1,
     maxSize: 10 * 1024 * 1024, // 10MB
   });
 
@@ -42,22 +43,16 @@ export default function UploadPage() {
     setIsUploading(true);
 
     try {
-      const presigned = await requestPresignedUpload({
-        fileName: file.name,
-        fileType: file.type || "application/pdf",
-        fileSize: file.size,
-      });
+      // 1. Presigned URL 요청
+      const presigned = await requestPresignedUpload(file.name);
 
-      await uploadFileToS3(presigned, file);
+      // 2. S3에 파일 업로드
+      const s3Key = await uploadFileToS3(presigned, file);
+      
+      // 3. 업로드 완료 후, s3Key를 fileId로 사용하여 generate 페이지로 이동
+      // 백엔드에서 이 key를 파일의 ID로 인식해야 합니다.
+      router.push(`/generate?fileId=${s3Key}&fileName=${encodeURIComponent(file.name)}`);
 
-      const confirmed = await confirmUploadMetadata({
-        fileName: file.name,
-        s3Key: presigned.key,
-        mimeType: file.type || "application/pdf",
-        size: file.size,
-      });
-
-      window.location.href = `/generate?fileId=${confirmed.id}`;
     } catch (error) {
       console.error("Upload failed", error);
       const message = error instanceof Error ? error.message : "파일 업로드에 실패했습니다.";

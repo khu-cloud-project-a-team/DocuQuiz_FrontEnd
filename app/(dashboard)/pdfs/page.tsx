@@ -1,9 +1,98 @@
+"use client";
+
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { FileText, ChevronLeft, PlayCircle } from "lucide-react";
+import { FileText, ChevronLeft, PlayCircle, Loader2, AlertTriangle, RefreshCcw } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { listFiles, FileEntity } from "@/lib/api";
+import { format } from 'date-fns';
+
+function formatBytes(bytes: number, decimals = 2) {
+  if (bytes === 0) return '0 Bytes';
+  const k = 1024;
+  const dm = decimals < 0 ? 0 : decimals;
+  const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
+}
 
 export default function PdfsPage() {
+  const [files, setFiles] = useState<FileEntity[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const fetchData = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const filesData = await listFiles();
+      setFiles(filesData);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "파일 목록을 불러오는 데 실패했습니다.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchData();
+  }, []);
+
+  const renderContent = () => {
+    if (loading) {
+      return (
+        <div className="flex justify-center items-center h-48">
+          <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+        </div>
+      );
+    }
+
+    if (error) {
+      return (
+        <div className="flex flex-col justify-center items-center h-48 text-red-600">
+          <AlertTriangle className="h-8 w-8" />
+          <p className="mt-4 text-lg">오류: {error}</p>
+          <Button onClick={fetchData} className="mt-4" variant="outline">
+            <RefreshCcw className="mr-2 h-4 w-4" /> 다시 시도
+          </Button>
+        </div>
+      );
+    }
+    
+    if (files.length === 0) {
+        return <p className="text-sm text-muted-foreground text-center py-12">업로드된 파일이 없습니다.</p>;
+    }
+
+    return (
+      <div className="space-y-4">
+        {files.map((item) => (
+          <div key={item.id} className="flex items-center justify-between border-b pb-4 last:border-0 last:pb-0">
+            <div className="flex items-center gap-4">
+              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-muted">
+                <FileText className="h-6 w-6 text-muted-foreground" />
+              </div>
+              <div className="space-y-1">
+                <p className="text-sm font-medium leading-none">{item.originalName}</p>
+                <p className="text-xs text-muted-foreground">
+                  {format(new Date(item.createdAt), 'yyyy-MM-dd')} • {formatBytes(item.size)}
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <Button size="sm" variant="outline" className="h-8" asChild>
+                <Link href={`/generate?fileId=${item.id}&fileName=${encodeURIComponent(item.originalName)}`}>
+                  <PlayCircle className="mr-2 h-3 w-3" />
+                  문제 생성
+                </Link>
+              </Button>
+            </div>
+          </div>
+        ))}
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       <Button variant="ghost" className="pl-0 hover:bg-transparent hover:text-primary" asChild>
@@ -24,42 +113,11 @@ export default function PdfsPage() {
         <CardHeader>
           <CardTitle>파일 목록</CardTitle>
           <CardDescription>
-            총 12개의 파일이 있습니다.
+            총 {files.length}개의 파일이 있습니다.
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="space-y-4">
-            {[
-              { title: "운영체제_8장_가상메모리.pdf", date: "2024-03-15", size: "2.4MB" },
-              { title: "데이터베이스_정규화_강의자료.pdf", date: "2024-03-14", size: "1.8MB" },
-              { title: "알고리즘_정렬_요약.pdf", date: "2024-03-10", size: "1.2MB" },
-              { title: "네트워크_TCP_IP_완벽가이드.pdf", date: "2024-03-05", size: "3.1MB" },
-              { title: "자료구조_트리_그래프.pdf", date: "2024-03-01", size: "1.5MB" },
-              { title: "컴퓨터구조_CPU_작동원리.pdf", date: "2024-02-28", size: "2.2MB" },
-              { title: "인공지능_기초_개념.pdf", date: "2024-02-25", size: "4.5MB" },
-              { title: "웹프로그래밍_React_기초.pdf", date: "2024-02-20", size: "1.9MB" },
-            ].map((item, i) => (
-              <div key={i} className="flex items-center justify-between border-b pb-4 last:border-0 last:pb-0">
-                <div className="flex items-center gap-4">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-muted">
-                    <FileText className="h-6 w-6 text-muted-foreground" />
-                  </div>
-                  <div className="space-y-1">
-                    <p className="text-sm font-medium leading-none">{item.title}</p>
-                    <p className="text-xs text-muted-foreground">{item.date} • {item.size}</p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Button size="sm" variant="outline" className="h-8" asChild>
-                    <Link href="/generate?fileId=demo_123">
-                      <PlayCircle className="mr-2 h-3 w-3" />
-                      문제 생성
-                    </Link>
-                  </Button>
-                </div>
-              </div>
-            ))}
-          </div>
+          {renderContent()}
         </CardContent>
       </Card>
     </div>

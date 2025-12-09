@@ -6,8 +6,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { BookOpen, Copy, Check, ArrowRight, Lock } from "lucide-react";
-import { generateSecretCode, loginWithCode } from "@/lib/auth";
+import { BookOpen, Copy, Check, ArrowRight, Lock, Loader2 } from "lucide-react";
+import { loginUser, signUpUser } from "@/lib/auth";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -21,18 +21,18 @@ export default function LoginPage() {
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!secretCode) {
+      setError("비밀코드를 입력해주세요.");
+      return;
+    }
     setIsLoading(true);
     setError("");
 
     try {
-      const success = await loginWithCode(secretCode);
-      if (success) {
-        router.push("/dashboard");
-      } else {
-        setError("유효하지 않은 비밀코드입니다.");
-      }
+      await loginUser(secretCode);
+      router.push("/dashboard");
     } catch (err) {
-      setError("로그인 중 오류가 발생했습니다.");
+      setError("유효하지 않은 비밀코드이거나 로그인 중 오류가 발생했습니다.");
     } finally {
       setIsLoading(false);
     }
@@ -41,6 +41,7 @@ export default function LoginPage() {
   const handleSignupStart = () => {
     setIsSignupMode(true);
     setError("");
+    setNickname("");
   };
 
   const handleSignupComplete = async (e: React.FormEvent) => {
@@ -55,18 +56,13 @@ export default function LoginPage() {
     }
 
     setIsLoading(true);
+    setError("");
     try {
-      const code = generateSecretCode();
-      const saved = await import("@/lib/auth").then(mod => mod.saveUser(code, nickname));
-
-      if (saved) {
-        setGeneratedCode(code);
-        setIsSignupMode(false); // Reset mode but we show result state driven by 'generatedCode'
-      } else {
-        setError("회원가입 중 오류가 발생했습니다.");
-      }
+      const response = await signUpUser(nickname);
+      setGeneratedCode(response.token);
+      setIsSignupMode(false); 
     } catch (err) {
-      setError("서버 오류가 발생했습니다.");
+      setError("회원가입 중 오류가 발생했습니다.");
     } finally {
       setIsLoading(false);
     }
@@ -87,6 +83,21 @@ export default function LoginPage() {
     setIsSignupMode(false);
     setError("");
   };
+
+  const handleStartNow = () => {
+    if (generatedCode) {
+      setSecretCode(generatedCode);
+      // loginUser를 호출하여 localStorage에 정보를 저장하고 바로 대시보드로 이동
+      loginUser(generatedCode).then(() => {
+        router.push("/dashboard");
+      }).catch(err => {
+        // 이 경우는 거의 없지만, 에러 처리
+        setError("자동 로그인에 실패했습니다. 코드를 복사하여 직접 로그인해주세요.");
+        setGeneratedCode(null); // 로그인 뷰로 돌아가기
+      });
+    }
+  };
+
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-slate-50 p-4">
@@ -131,17 +142,10 @@ export default function LoginPage() {
 
               <Button
                 className="w-full bg-slate-900 hover:bg-slate-800 text-white"
-                onClick={() => {
-                  setSecretCode(generatedCode);
-                  setGeneratedCode(null);
-                  handleLogin({ preventDefault: () => { } } as React.FormEvent);
-                  // Or just: 
-                  // localStorage.setItem('auth_token', generatedCode);
-                  // localStorage.setItem('user_nickname', nickname);
-                  // router.push("/dashboard");
-                }}
+                onClick={handleStartNow}
+                disabled={isLoading}
               >
-                바로 시작하기 <ArrowRight className="ml-2 h-4 w-4" />
+                 {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <>바로 시작하기 <ArrowRight className="ml-2 h-4 w-4" /></>}
               </Button>
             </div>
           ) : isSignupMode ? (
@@ -165,7 +169,7 @@ export default function LoginPage() {
               </div>
 
               <Button className="w-full bg-blue-600 hover:bg-blue-700 text-white shadow-md shadow-blue-600/10" disabled={isLoading}>
-                {isLoading ? "발급 중..." : "비밀코드 발급받기"}
+                {isLoading ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> 발급 중...</> : "비밀코드 발급받기"}
               </Button>
 
               <Button
@@ -173,6 +177,7 @@ export default function LoginPage() {
                 variant="ghost"
                 className="w-full hover:bg-slate-100 text-slate-500"
                 onClick={resetState}
+                disabled={isLoading}
               >
                 취소하고 뒤로가기
               </Button>
@@ -191,13 +196,14 @@ export default function LoginPage() {
                     value={secretCode}
                     onChange={(e) => setSecretCode(e.target.value.toUpperCase())}
                     maxLength={10}
+                    autoCapitalize="characters"
                   />
                 </div>
                 {error && <p className="text-xs text-red-500 font-medium">{error}</p>}
               </div>
 
               <Button className="w-full bg-blue-600 hover:bg-blue-700 text-white shadow-md shadow-blue-600/10" disabled={isLoading}>
-                {isLoading ? "확인 중..." : "로그인"}
+                {isLoading ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> 확인 중...</> : "로그인"}
               </Button>
 
               <div className="relative my-4">
