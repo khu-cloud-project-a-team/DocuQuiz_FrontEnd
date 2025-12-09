@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, Suspense } from "react";
+import { useState } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { Loader2, Sparkles, FileText } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -14,7 +14,7 @@ import { generateQuiz, QuizGenerationOptions } from "@/lib/api";
 type QuizType = '객관식' | '주관식' | 'OX' | '빈칸';
 type QuizDifficulty = '쉬움' | '보통' | '어려움';
 
-function GeneratePageComponent() {
+export default function GeneratePage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const fileId = searchParams.get("fileId");
@@ -129,15 +129,5 @@ function GeneratePageComponent() {
         </CardFooter>
       </Card>
     </div>
-  );
-}
-
-
-// Suspense로 감싸서 useSearchParams 사용에 대한 client-side 렌더링을 보장합니다.
-export default function GeneratePage() {
-  return (
-    <Suspense fallback={<div>Loading...</div>}>
-      <GeneratePageComponent />
-    </Suspense>
   );
 }
