@@ -28,12 +28,11 @@ export const uploadFileToS3 = async (
     formData.append(key, value);
   });
 
-  // 'Content-Type'은 S3 Policy에 따라 다를 수 있으므로 명시적으로 추가합니다.
-  // presigned.fields에 Content-Type이 포함되어 있다면 이 줄은 필요 없을 수 있습니다.
-  formData.append("Content-Type", file.type || "application/octet-stream");
+  // 'Content-Type'과 같은 필드는 S3 Policy에 따라 presigned.fields에 포함되어야 합니다.
+  // 이 예제에서는 백엔드가 생성한 presigned post에 의존하며, 프론트엔드에서 필드를 추가하지 않습니다.
 
   // 마지막으로 실제 파일 데이터를 추가합니다. 'file'이라는 필드 이름은 서버 설정과 일치해야 합니다.
-  formData.append("file", file);
+  formData.append('file', file);
 
   // FormData를 S3 Presigned URL로 POST 요청합니다.
   const response = await fetch(presigned.url, {
