@@ -194,9 +194,8 @@ export default function LoginPage() {
                     placeholder="10자리 비밀코드를 입력하세요"
                     className="pl-9 bg-slate-50 border-slate-200 focus:border-blue-500 transition-colors"
                     value={secretCode}
-                    onChange={(e) => setSecretCode(e.target.value.toUpperCase())}
+                    onChange={(e) => setSecretCode(e.target.value)}
                     maxLength={10}
-                    autoCapitalize="characters"
                   />
                 </div>
                 {error && <p className="text-xs text-red-500 font-medium">{error}</p>}
