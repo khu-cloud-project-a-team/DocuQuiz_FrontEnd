@@ -1,9 +1,17 @@
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
+## Environment Setup
+
+1. 환경변수 템플릿(`env.example`)을 복사해 로컬 전용 파일을 만듭니다.
+   ```bash
+   cp env.example .env.local
+   ```
+2. `.env.local`은 `.gitignore`에 포함되어 있으므로 깃허브에 업로드되지 않습니다.
+3. 필요하다면 `NEXT_PUBLIC_API_URL` 값을 실제로 연결하고 싶은 서버 주소로 수정하세요.
+
 ## Getting Started
 
-First, run the development server:
-
+먼저 개발 서버를 실행합니다:
 ```bash
 npm run dev
 # or
@@ -14,11 +22,9 @@ pnpm dev
 bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+브라우저에서 [http://localhost:3000](http://localhost:3000)을 열면 결과를 확인할 수 있습니다.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
-
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+`app/page.tsx` 파일을 수정해 바로 반영되는 화면을 확인할 수 있습니다.
 
 ## Learn More
 

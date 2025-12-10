@@ -49,7 +49,6 @@ export const uploadFileToS3 = async (
     );
   }
   
-  // 업로드가 성공하면, 파일의 S3 key를 반환합니다.
-  // 이 key는 'generate' API 호출 시 `fileId`로 사용될 수 있습니다.
+  // 업로드가 성공하면, 이후 백엔드에 업로드 완료를 알릴 때 사용할 S3 key를 반환합니다.
   return presigned.key;
 };

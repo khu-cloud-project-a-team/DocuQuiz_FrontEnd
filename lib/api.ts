@@ -1,6 +1,10 @@
 // lib/api.ts
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://api.docuquiz.win';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL;
+
+if (!API_BASE_URL) {
+  throw new Error('환경 변수 NEXT_PUBLIC_API_URL이 설정되어 있지 않습니다.');
+}
 
 // ==================================
 // Type Definitions
@@ -23,6 +27,13 @@ export interface PresignedUrlResponse {
   url: string;
   fields: Record<string, string>;
   key: string;
+}
+
+export interface ConfirmUploadRequest {
+  fileName: string;
+  s3Key: string;
+  mimeType: string;
+  size: number;
 }
 
 export interface FileEntity {
@@ -169,6 +180,13 @@ export const getPresignedUrl = (fileName: string): Promise<PresignedUrlResponse>
 export const listFiles = (): Promise<FileEntity[]> => {
   return fetchWithAuth('/file', {
     method: 'GET',
+  });
+};
+
+export const confirmUpload = (payload: ConfirmUploadRequest): Promise<FileEntity> => {
+  return fetchWithAuth('/file/confirm-upload', {
+    method: 'POST',
+    body: JSON.stringify(payload),
   });
 };
 

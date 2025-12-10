@@ -7,6 +7,7 @@ import { UploadCloud, FileText, X, Loader2, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { requestPresignedUpload, uploadFileToS3 } from "@/lib/upload";
+import { confirmUpload } from "@/lib/api";
 
 export default function UploadPage() {
   const [files, setFiles] = useState<File[]>([]);
@@ -48,10 +49,17 @@ export default function UploadPage() {
 
       // 2. S3에 파일 업로드
       const s3Key = await uploadFileToS3(presigned, file);
-      
-      // 3. 업로드 완료 후, s3Key를 fileId로 사용하여 generate 페이지로 이동
-      // 백엔드에서 이 key를 파일의 ID로 인식해야 합니다.
-      router.push(`/generate?fileId=${s3Key}&fileName=${encodeURIComponent(file.name)}`);
+
+      // 3. 백엔드에 업로드 완료를 알리고 FileEntity 생성
+      const confirmedFile = await confirmUpload({
+        fileName: file.name,
+        s3Key,
+        mimeType: file.type || "application/pdf",
+        size: file.size,
+      });
+
+      // 4. 응답으로 받은 파일 ID를 사용해 다음 단계로 이동
+      router.push(`/generate?fileId=${confirmedFile.id}&fileName=${encodeURIComponent(confirmedFile.originalName)}`);
 
     } catch (error) {
       console.error("Upload failed", error);
