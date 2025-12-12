@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { FileText, ChevronLeft, PlayCircle, Loader2, AlertTriangle, RefreshCcw } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -21,6 +22,7 @@ export default function PdfsPage() {
   const [files, setFiles] = useState<FileEntity[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const router = useRouter();
 
   const fetchData = async () => {
     setLoading(true);
@@ -38,6 +40,14 @@ export default function PdfsPage() {
   useEffect(() => {
     fetchData();
   }, []);
+
+  const handleGenerateClick = (file: FileEntity) => {
+    if (!file.status) {
+      alert("PDF 분석이 아직 완료되지 않았습니다. 잠시 후 다시 시도해주세요.");
+      return;
+    }
+    router.push(`/generate?fileId=${file.id}&fileName=${encodeURIComponent(file.originalName)}`);
+  };
 
   const renderContent = () => {
     if (loading) {
@@ -80,11 +90,14 @@ export default function PdfsPage() {
               </div>
             </div>
             <div className="flex items-center gap-2">
-              <Button size="sm" variant="outline" className="h-8" asChild>
-                <Link href={`/generate?fileId=${item.id}&fileName=${encodeURIComponent(item.originalName)}`}>
-                  <PlayCircle className="mr-2 h-3 w-3" />
-                  문제 생성
-                </Link>
+              <Button
+                size="sm"
+                variant="outline"
+                className="h-8"
+                onClick={() => handleGenerateClick(item)}
+              >
+                <PlayCircle className="mr-2 h-3 w-3" />
+                문제 생성
               </Button>
             </div>
           </div>

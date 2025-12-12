@@ -58,8 +58,8 @@ export default function UploadPage() {
         size: file.size,
       });
 
-      // 4. 응답으로 받은 파일 ID를 사용해 다음 단계로 이동
-      router.push(`/generate?fileId=${confirmedFile.id}&fileName=${encodeURIComponent(confirmedFile.originalName)}`);
+      // 4. 업로드 완료 후 파일 목록 화면으로 이동하여 처리 상태 확인
+      router.push("/pdfs");
 
     } catch (error) {
       console.error("Upload failed", error);
