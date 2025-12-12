@@ -102,7 +102,7 @@ export default function PdfsPage() {
                 ) : (
                   <Loader2 className="mr-2 h-3 w-3 animate-spin" />
                 )}
-                {item.status ? "문제 생성" : "분석 중중"}
+                {item.status ? "문제 생성" : "분석 중"}
               </Button>
             </div>
           </div>
