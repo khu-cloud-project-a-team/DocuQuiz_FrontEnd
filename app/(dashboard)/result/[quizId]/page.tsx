@@ -22,28 +22,6 @@ export default function ResultPage() {
     const totalQuestions = parseInt(searchParams.get("total") || "0");
     const wrongAnswerNoteId = searchParams.get("noteId");
 
-    // 퀴즈 ID 식별 (resultId가 DB의 QuizResult ID이고, 실제 Quiz ID는 쿼리 파라미터나 스토리지에서 찾아야 함)
-    // 하지만 현재 구조상 URL params의 quizId가 사실은 Result ID임.
-    // Quiz ID를 찾으려면 스토리지에 저장된 키를 찾아야 하는데, 키가 `quiz_data_${quizId}`임.
-    // 하지만 여기서 quizId를 알 수 있는 방법이... 아, `QuizPage`에서 `submitQuiz` 호출 후 `router.push(/result/${result.id})` 함.
-    // 즉 URL의 quizId는 Result ID임.
-    // 스토리지 키를 찾으려면 Quiz ID가 필요한데 URL에는 없음.
-    // => 해결책: `submitQuiz` 응답에 `quizId`가 있으면 좋겠지만 현재는 없음.
-    // => 대안: sessionStorage의 모든 키를 뒤져서 `quiz_data_`로 시작하는 가장 최근 항목을 찾거나,
-    //    QuizPage에서 `sessionStorage.setItem('current_quiz_id', quizId)`를 하나 더 저장하는게 좋겠음.
-    //    또는 이미 저장된 `quiz_data_${quizId}`를 찾기 위해 반복문을 돌릴 수도 있음.
-    //    아니면 `ResultPage` 로직상 `quizId`를 쿼리스트링으로 넘겨주는게 가장 확실함.
-
-    // *수정*: QuizPage에서 쿼리스트링으로 `originalQuizId`를 넘겨주는게 좋겠다.
-    // 하지만 이미 배포/구현된 코드를 건드리는 범위를 최소화하려면?
-    // 백엔드 `getQuizResult`를 호출하면 `quiz` 객체가 들어있고 거기에 `id`가 있음.
-    // 하지만 백엔드 호출 없이 스토리지에서 먼저 찾고 싶음.
-    // QuizPage에서 `sessionStorage.setItem('last_quiz_id', quizId)`를 추가하는 편이 좋겠다.
-
-    // 일단은 백엔드 `getQuizResult`가 아직 구현 안된 상태(상세 정보 미포함)이므로
-    // 스토리지에서 데이터를 가져와야 하는데...
-    // 아, QuizPage 수정해서 쿼리 파라미터에 `quizId`를 추가하는게 가장 깔끔함.
-
     const originalQuizId = searchParams.get("quizId");
 
     const [quizData, setQuizData] = useState<Quiz | null>(null);
@@ -59,56 +37,19 @@ export default function ResultPage() {
         const loadData = async () => {
             setLoading(true);
 
-            // 1. Session Storage에서 데이터 시도
-            // quizId가 쿼리에 있으면 그걸 쓰고, 없으면 'last_quiz_id' 같은걸 쓰거나...
-            // QuizPage code changes needed to pass quizId in query string. I will modify QuizPage again.
-            // For now, let's assume I fix QuizPage to pass `quizId`.
+            if (originalQuizId) {
+                try {
+                    // Fetch basic quiz data from API (since we removed sessionStorage logic)
+                    // We won't have the user's specific answers or the PDF URL state preserved from the session
+                    const fetchedQuiz = await getQuiz(originalQuizId);
+                    setQuizData(fetchedQuiz);
 
-            let qId = originalQuizId;
-            if (!qId) {
-                // Fallback: try to find from storage keys? Unreliable.
-                // Let's modify QuizPage first to pass quizId.
-                // But wait, I can access storage in the browser. 
-                // Let's just try to load 'last_processed_quiz_id' if I save it.
-                qId = sessionStorage.getItem('last_active_quiz_id');
-            }
-
-            if (qId) {
-                const storedQuiz = sessionStorage.getItem(`quiz_data_${qId}`);
-                const storedAnswers = sessionStorage.getItem(`user_answers_${qId}`);
-
-                if (storedQuiz && storedAnswers) {
-                    const parsedQuiz = JSON.parse(storedQuiz) as Quiz;
-                    setQuizData(parsedQuiz);
-                    setUserAnswers(JSON.parse(storedAnswers));
-
-                    // PDF URL 설정 (페이지 파편은 제거)
-                    if (parsedQuiz.pdfInfo?.url) {
-                        setPdfUrl(parsedQuiz.pdfInfo.url);
-                    }
-
-                    setLoading(false);
-                    return;
+                    // We don't have user answers anymore, so we can't show "My Answer" vs "Correct Answer" logic accurately
+                    // But we can still show the questions and explanations.
+                } catch (err) {
+                    console.error("Failed to fetch quiz data", err);
                 }
             }
-
-            // 2. Storage에 없으면 API 호출 (백엔드가 상세 정보를 안주므로 제한적임)
-            // 그래도 퀴즈 자체는 불러올 수 있으니 시도.
-            // 하지만 qId를 모르면 이것도 불가능. QuizResult ID(`resultId`)로 QuizResult를 조회해서 Quiz ID를 알아내야 함.
-            // 현재 백엔드 `getQuizResult`는 `quiz` 객체를 포함하여 반환함 (controller에는 없지만 service에는 있음? 아니 Controller check needed).
-            // Controller: GET /quiz/:id -> QuizService.getQuizResult (X - This is getQuiz)
-            // Controller: GET /quiz (List)
-            // Controller has NO endpoint for getQuizResult explicitly with full details.
-            // BUT, `quiz.service.ts` has `getQuizResult(id, user)`.
-            // Wait, does Controller expose it?
-            // Checking `quiz.controller.ts`...
-            // Line 117: // TODO: GET /quiz/result/:resultId 구현 필요
-            // It is NOT exposed. Function `getQuizResult` exists in Service but not Controller.
-            // So we CANNOT fetch result details from backend without backend changes.
-
-            // Critical: If we rely on Frontend Only, we MUST have the data in Storage.
-            // And we MUST know the Quiz ID to get it from storage.
-            // So I MUST modify QuizPage to pass `quizId` in the query params.
 
             setLoading(false);
         };
@@ -195,18 +136,10 @@ export default function ResultPage() {
                     </CardContent>
                 </Card>
 
-                {wrongAnswerNoteId && (
-                    <Button
-                        onClick={handleRegenerateFromNote}
-                        disabled={isRegenerating}
-                        className="w-full shrink-0 bg-blue-600 hover:bg-blue-700"
-                    >
-                        {isRegenerating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <RefreshCcw className="mr-2 h-4 w-4" />}
-                        오답 집중 공략하기 (AI 추천 문제)
-                    </Button>
-                )}
 
-                <ScrollArea className="flex-1 pr-4 rounded-md border bg-white p-4">
+
+                {/* ScrollArea 대신 일반 div 사용으로 높이 문제 해결 시도 */}
+                <div className="flex-1 rounded-md border bg-white p-4 overflow-y-auto min-h-0">
                     <div className="space-y-6">
                         {quizData.questions.map((q, idx) => {
                             const userAnswer = userAnswers[q.id];
@@ -215,8 +148,7 @@ export default function ResultPage() {
                             return (
                                 <div key={q.id} className="flex flex-col gap-3 pb-6 border-b last:border-0 relative">
                                     <div className="flex items-start gap-3">
-                                        <div className={`shrink-0 w-8 h-8 rounded-full flex items-center justify-center border-2 font-bold text-sm mt-1
-                                            ${isCorrect ? 'border-green-500 bg-green-50 text-green-700' : 'border-red-500 bg-red-50 text-red-700'}`}>
+                                        <div className="shrink-0 w-8 h-8 rounded-full flex items-center justify-center border-2 border-slate-300 bg-slate-50 text-slate-500 font-bold text-sm mt-1">
                                             {idx + 1}
                                         </div>
                                         <div className="flex-1">
@@ -224,19 +156,10 @@ export default function ResultPage() {
                                                 <h3 className="font-medium text-lg text-slate-900 leading-snug">
                                                     {q.question}
                                                 </h3>
-                                                <Badge variant={isCorrect ? "default" : "destructive"} className="shrink-0 ml-2">
-                                                    {isCorrect ? "정답" : "오답"}
-                                                </Badge>
                                             </div>
 
-                                            {/* Answers Comparison */}
-                                            <div className="grid grid-cols-2 gap-4 mb-3 text-sm">
-                                                <div className={`p-3 rounded-lg border ${isCorrect ? 'bg-blue-50 border-blue-200' : 'bg-red-50 border-red-200'}`}>
-                                                    <span className="block text-xs text-slate-500 mb-1">내 답안</span>
-                                                    <span className={`font-semibold ${isCorrect ? 'text-blue-700' : 'text-red-700'}`}>
-                                                        {userAnswer || "(미입력)"}
-                                                    </span>
-                                                </div>
+                                            {/* Answers Comparison - Only show Correct Answer since User Answer is not persisted */}
+                                            <div className="mb-3 text-sm">
                                                 <div className="p-3 rounded-lg border bg-slate-50 border-slate-200">
                                                     <span className="block text-xs text-slate-500 mb-1">정답</span>
                                                     <span className="font-semibold text-slate-700">
@@ -256,22 +179,12 @@ export default function ResultPage() {
                                                 </p>
                                             </div>
 
-                                            {/* Source Context & Link */}
+                                            {/* Source Context Info Only (No Button) */}
                                             {q.page > 0 && (
-                                                <div className="flex items-center justify-between mt-2 pl-1">
+                                                <div className="flex items-center mt-2 pl-1">
                                                     <span className="text-xs text-slate-400">
-                                                        참고: Page {q.page}
+                                                        참고: Page {q.page} 에서 출제됨
                                                     </span>
-                                                    <Button
-                                                        variant="ghost"
-                                                        size="sm"
-                                                        className="text-blue-600 hover:text-blue-800 hover:bg-blue-50 h-8"
-                                                        onClick={() => jumpToPage(q.page)}
-                                                    >
-                                                        <FileText className="h-3 w-3 mr-1" />
-                                                        근거 문서 보기
-                                                        <ChevronRight className="h-3 w-3 ml-1" />
-                                                    </Button>
                                                 </div>
                                             )}
                                         </div>
@@ -279,7 +192,17 @@ export default function ResultPage() {
                                 </div>
                             );
                         })}
-                        <div className="pt-4 pb-8 flex justify-center">
+                        <div className="pt-4 pb-8 flex flex-col gap-2 justify-center">
+                            {wrongAnswerNoteId && (
+                                <Button
+                                    onClick={handleRegenerateFromNote}
+                                    disabled={isRegenerating}
+                                    className="w-full shrink-0 bg-blue-600 hover:bg-blue-700"
+                                >
+                                    {isRegenerating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <RefreshCcw className="mr-2 h-4 w-4" />}
+                                    오답문제 재생성
+                                </Button>
+                            )}
                             <Button variant="outline" asChild className="w-full">
                                 <Link href="/dashboard">
                                     <Home className="mr-2 h-4 w-4" /> 대시보드로 돌아가기
@@ -287,7 +210,7 @@ export default function ResultPage() {
                             </Button>
                         </div>
                     </div>
-                </ScrollArea>
+                </div>
             </div>
 
             {/* Right Panel: PDF Viewer */}

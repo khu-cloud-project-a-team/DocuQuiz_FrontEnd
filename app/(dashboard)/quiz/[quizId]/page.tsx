@@ -108,16 +108,6 @@ export default function QuizPage() {
         query.set('noteId', result.wrongAnswerNoteId);
       }
 
-      // 결과 페이지에서 사용하기 위해 세션 스토리지에 퀴즈 데이터와 답안 저장
-      // (새로고침 시 유지되지만, 탭 닫으면 사라짐)
-      try {
-        sessionStorage.setItem(`quiz_data_${quizId}`, JSON.stringify(quiz));
-        sessionStorage.setItem(`user_answers_${quizId}`, JSON.stringify(answers)); // 원본 answers 객체 저장
-        sessionStorage.setItem('last_active_quiz_id', quizId); // ResultPage에서 ID를 찾지 못할 경우 대비
-      } catch (e) {
-        console.error("Failed to save to sessionStorage", e);
-      }
-
       // 쿼리 파라미터에 원본 Quiz ID 추가 (ResultPage에서 데이터 로드용)
       query.set('quizId', quizId);
 
