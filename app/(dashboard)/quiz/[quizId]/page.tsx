@@ -28,6 +28,9 @@ export default function QuizPage() {
       try {
         setLoading(true);
         const data = await getQuiz(quizId);
+        console.log("Fetched quiz data:", data);
+        console.log("Questions count:", data.questions?.length);
+        console.log("Questions:", data.questions);
         setQuiz(data);
         // Reset answers for the new quiz
         setAnswers({});
@@ -65,6 +68,13 @@ export default function QuizPage() {
   const questions = quiz.questions;
   const progress = ((currentIdx + 1) / questions.length) * 100;
   const currQ = questions[currentIdx];
+  
+  console.log("Current state:", {
+    questionsLength: questions.length,
+    currentIdx,
+    currQ,
+    hasQuestion: !!currQ?.question
+  });
 
   const handleSelect = (answer: string) => {
     setAnswers({ ...answers, [currQ.id]: answer });

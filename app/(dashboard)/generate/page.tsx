@@ -46,6 +46,9 @@ export default function GeneratePage() {
     try {
       console.log("Generating quiz with:", { fileId, options });
       const quiz = await generateQuiz(fileId, options);
+      console.log("Generated quiz response:", quiz);
+      console.log("Questions count:", quiz.questions?.length);
+      console.log("Questions:", quiz.questions);
       router.push(`/quiz/${quiz.id}`);
     } catch (error) {
       console.error("Failed to generate quiz", error);
