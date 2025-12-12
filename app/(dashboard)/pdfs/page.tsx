@@ -93,11 +93,16 @@ export default function PdfsPage() {
               <Button
                 size="sm"
                 variant="outline"
-                className="h-8"
+                className={`h-8 ${!item.status ? "opacity-50 cursor-not-allowed" : ""}`}
+                disabled={!item.status}
                 onClick={() => handleGenerateClick(item)}
               >
-                <PlayCircle className="mr-2 h-3 w-3" />
-                문제 생성
+                {item.status ? (
+                   <PlayCircle className="mr-2 h-3 w-3" />
+                ) : (
+                  <Loader2 className="mr-2 h-3 w-3 animate-spin" />
+                )}
+                {item.status ? "문제 생성" : "분석 중중"}
               </Button>
             </div>
           </div>
