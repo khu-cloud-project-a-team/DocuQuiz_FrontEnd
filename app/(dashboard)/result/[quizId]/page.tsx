@@ -43,9 +43,24 @@ export default function ResultPage() {
                     const fetchedQuiz = await getQuiz(originalQuizId);
                     setQuizData(fetchedQuiz);
 
-                    // Get PDF URL from quiz data (already CDN URL format)
+                    // Get PDF URL from quiz data and convert to Blob URL for inline display
                     if (fetchedQuiz.pdfInfo?.url) {
-                        setPdfUrl(fetchedQuiz.pdfInfo.url);
+                        try {
+                            const cdnUrl = fetchedQuiz.pdfInfo.url;
+                            // Fetch PDF as blob to bypass Content-Disposition: attachment header
+                            const response = await fetch(cdnUrl);
+                            if (!response.ok) throw new Error('Failed to fetch PDF data');
+
+                            const blob = await response.blob();
+                            const pdfBlob = new Blob([blob], { type: 'application/pdf' });
+                            const objectUrl = URL.createObjectURL(pdfBlob);
+
+                            setPdfUrl(objectUrl);
+                        } catch (pdfErr) {
+                            console.error("Failed to load PDF inline", pdfErr);
+                            // Fallback: use CDN URL directly if blob conversion fails
+                            setPdfUrl(fetchedQuiz.pdfInfo.url);
+                        }
                     }
 
                 } catch (err) {
