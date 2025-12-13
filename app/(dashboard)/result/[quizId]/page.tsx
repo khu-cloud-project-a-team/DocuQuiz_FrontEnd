@@ -31,7 +31,7 @@ export default function ResultPage() {
 
     // PDF 관련
     const [pdfUrl, setPdfUrl] = useState<string | null>(null);
-    const pdfFrameRef = useRef<HTMLIFrameElement>(null);
+    const pdfFrameRef = useRef<HTMLEmbedElement>(null);
 
     useEffect(() => {
         const loadData = async () => {
@@ -253,9 +253,10 @@ export default function ResultPage() {
             {/* Right Panel: PDF Viewer */}
             <div className="hidden md:block w-1/2 h-full bg-slate-100 rounded-lg overflow-hidden border border-slate-200 relative">
                 {pdfUrl ? (
-                    <iframe
+                    <embed
                         ref={pdfFrameRef}
                         src={pdfUrl}
+                        type="application/pdf"
                         className="w-full h-full"
                         title="Source PDF"
                     />
