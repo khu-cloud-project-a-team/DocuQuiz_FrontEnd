@@ -65,7 +65,7 @@ export default function HistoryPage() {
         <div>
           <h2 className="text-3xl font-bold tracking-tight">학습 이력</h2>
           <p className="text-muted-foreground">
-            생성한 모든 퀴즈 목록입니다. 다시 풀거나 결과를 확인해보세요.
+            생성한 모든 퀴즈 목록입니다. 다시 풀고 결과를 확인해보세요.
           </p>
         </div>
       </div>
