@@ -62,6 +62,7 @@ export interface Question {
   answer: string;
   explanation: string;
   source_context: string;
+  is_correct?: boolean | null; // 사용자가 맞췄는지 여부 (null: 아직 안 풂)
 }
 
 export interface Quiz {

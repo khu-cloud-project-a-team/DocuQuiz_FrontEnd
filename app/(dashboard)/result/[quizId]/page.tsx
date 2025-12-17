@@ -169,13 +169,19 @@ export default function ResultPage() {
                 <div className="flex-1 rounded-md border bg-white p-4 overflow-y-auto min-h-0">
                     <div className="space-y-6">
                         {quizData.questions.map((q, idx) => {
-                            const userAnswer = userAnswers[q.id];
-                            const isCorrect = userAnswer?.trim() === q.answer.trim(); // 단순 문자열 비교
+                            const isCorrect = q.is_correct === true;
+                            const isIncorrect = q.is_correct === false;
 
                             return (
                                 <div key={q.id} className="flex flex-col gap-3 pb-6 border-b last:border-0 relative">
                                     <div className="flex items-start gap-3">
-                                        <div className="shrink-0 w-8 h-8 rounded-full flex items-center justify-center border-2 border-slate-300 bg-slate-50 text-slate-500 font-bold text-sm mt-1">
+                                        <div
+                                            className={`shrink-0 w-8 h-8 rounded-full flex items-center justify-center border-2 font-bold text-sm mt-1
+                                                ${isCorrect ? 'border-green-500 bg-green-50 text-green-700' : ''}
+                                                ${isIncorrect ? 'border-red-500 bg-red-50 text-red-700' : ''}
+                                                ${q.is_correct === null ? 'border-slate-300 bg-slate-50 text-slate-500' : ''}
+                                            `}
+                                        >
                                             {idx + 1}
                                         </div>
                                         <div className="flex-1">
@@ -183,6 +189,18 @@ export default function ResultPage() {
                                                 <h3 className="font-medium text-lg text-slate-900 leading-snug">
                                                     {q.question}
                                                 </h3>
+                                                {isCorrect && (
+                                                    <Badge className="ml-2 bg-green-100 text-green-700 border-green-300">
+                                                        <CheckCircle2 className="h-3 w-3 mr-1" />
+                                                        정답
+                                                    </Badge>
+                                                )}
+                                                {isIncorrect && (
+                                                    <Badge className="ml-2 bg-red-100 text-red-700 border-red-300">
+                                                        <XCircle className="h-3 w-3 mr-1" />
+                                                        오답
+                                                    </Badge>
+                                                )}
                                             </div>
 
                                             {/* Answers Comparison - Only show Correct Answer since User Answer is not persisted */}
