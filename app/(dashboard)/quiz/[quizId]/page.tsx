@@ -202,14 +202,35 @@ export default function QuizPage() {
                   : parsed;
 
                 if (typeof content === 'string') {
-                  // 문장 단위로 분리 (. 기준으로)
-                  const sentences = content
+                  // 1. 문장 단위로 분리 (. 기준으로)
+                  const rawSentences = content
                     .split(/(?<=[.?!])\s+/) // 문장 끝 부호 뒤의 공백으로 분리
                     .filter(s => s.trim().length > 0);
 
+                  // 2. 접속사로 시작하는 문장 병합 (Smart Merging)
+                  const conjunctions = [
+                    '특히', '그리고', '또한', '하지만', '따라서', '즉',
+                    '그런데', '반면', '게다가', '더불어', '왜냐하면',
+                    '예를 들어', '결국', '다만', '이러한', '그러므로'
+                  ];
+
+                  const mergedSentences: string[] = [];
+
+                  rawSentences.forEach((sentence, index) => {
+                    const trimmed = sentence.trim();
+                    // 첫 문장이 아니고, 접속사로 시작하면 앞 문장에 붙임
+                    const startsWithConjunction = conjunctions.some(c => trimmed.startsWith(c));
+
+                    if (index > 0 && startsWithConjunction) {
+                      mergedSentences[mergedSentences.length - 1] += " " + trimmed;
+                    } else {
+                      mergedSentences.push(trimmed);
+                    }
+                  });
+
                   return (
                     <ol className="list-decimal list-outside pl-5 space-y-2">
-                      {sentences.map((sentence, idx) => (
+                      {mergedSentences.map((sentence, idx) => (
                         <li key={idx} className="leading-relaxed pl-1">
                           {sentence}
                         </li>
